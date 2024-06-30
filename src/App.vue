@@ -1,21 +1,21 @@
 <script setup>
 import { computed, reactive, ref } from "vue";
-/*
-These are Icons that you can use, of course you can use other ones if you prefer.
-*/
-import { StarIcon, TrashIcon, PencilIcon } from "@heroicons/vue/24/solid";
+
 import { items } from "./movies.json";
+import MovieItem from "@/MovieItem.vue";
 
 const movies = ref(items);
 
-function updateRating(movieIndex, rating) {
-  movies.value[movieIndex].rating = rating;
+function updateRating({ id, rating }) {
+  movies.value = movies.value.map((movie) =>
+    movie.id === id ? { ...movie, rating } : movie
+  );
 }
-function removeMovie(movieIndex) {
-  movies.value = movies.value.filter((movie, index) => index !== movieIndex);
+function removeMovie(id) {
+  movies.value = movies.value.filter((movie) => movie.id !== id);
 }
-function editMovie(movieIndex) {
-  const movie = movies.value[movieIndex];
+function editMovie(id) {
+  const movie = movies.value.find((movie) => movie.id === id);
 
   form.id = movie.id;
   form.name = movie.name;
@@ -125,6 +125,7 @@ function addMovie() {
 }
 
 function cleanUpForm() {
+  form.id = null;
   form.name = null;
   form.description = null;
   form.image = null;
@@ -178,12 +179,7 @@ function removeRatings() {
         <form @submit.prevent="saveMovie">
           <div class="movie-form-input-wrapper">
             <label for="name">Name</label>
-            <input
-              type="text"
-              name="name"
-              v-model="form.name"
-              class="movie-form-input"
-            />
+            <input type="text" name="name" v-model="form.name" class="movie-form-input" />
             <span class="movie-form-error">{{ errors.name }}</span>
           </div>
           <div class="movie-form-input-wrapper">
@@ -208,17 +204,8 @@ function removeRatings() {
           </div>
           <div class="movie-form-input-wrapper">
             <label for="genre">Genres</label>
-            <select
-              name="genre"
-              v-model="form.genres"
-              class="movie-form-input"
-              multiple
-            >
-              <option
-                v-for="option in genres"
-                :key="option.value"
-                :value="option.value"
-              >
+            <select name="genre" v-model="form.genres" class="movie-form-input" multiple>
+              <option v-for="option in genres" :key="option.value" :value="option.value">
                 {{ option.text }}
               </option>
             </select>
@@ -242,9 +229,7 @@ function removeRatings() {
             </span>
           </div>
           <div class="movie-form-actions-wrapper">
-            <button type="button" class="button" @click="hideForm">
-              Cancel
-            </button>
+            <button type="button" class="button" @click="hideForm">Cancel</button>
 
             <button type="submit" class="button-primary">
               <span v-if="form.id">Update</span>
@@ -282,85 +267,14 @@ function removeRatings() {
       </div>
     </div>
     <div class="movie-list">
-      <div
-        class="movie-item group"
+      <movie-item
         v-for="(movie, movieIndex) in movies"
         :key="movie.id"
-      >
-        <div class="movie-item-image-wrapper">
-          <div class="movie-item-star-wrapper">
-            <StarIcon
-              id="rating"
-              class="movie-item-star-rating-icon"
-              :class="[movie.rating ? 'text-yellow-500' : 'text-gray-500']"
-            />
-            <div class="movie-item-star-content-wrapper">
-              <span
-                v-if="movie.rating"
-                id="rating-stars"
-                class="movie-item-star-content-rating-rated"
-              >
-                {{ movie.rating }}
-              </span>
-              <span v-else class="movie-item-star-content-rating-not-rated">
-                -
-              </span>
-            </div>
-          </div>
-          <img :src="movie.image" class="movie-item-image" alt="" />
-        </div>
-
-        <div class="movie-item-content-wrapper">
-          <div class="movie-item-title-wrapper">
-            <h3 class="movie-item-title">{{ movie.name }}</h3>
-            <div class="movie-item-genres-wrapper">
-              <span
-                v-for="genre in movie.genres"
-                :key="`${movie.id}-${genre}`"
-                class="movie-item-genre-tag"
-                >{{ genre }}</span
-              >
-            </div>
-          </div>
-          <div class="movie-item-description-wrapper">
-            <p class="movie-item-description">{{ movie.description }}</p>
-          </div>
-          <div class="movie-item-rating-wrapper">
-            <span class="movie-item-rating-text">
-              Rating: ({{ movie.rating }}/5)
-            </span>
-            <div class="movie-item-star-icon-wrapper">
-              <button
-                v-for="star in 5"
-                :key="star"
-                class="movie-item-star-icon-button"
-                :class="[
-                  star <= movie.rating ? 'text-yellow-500' : 'text-gray-500',
-                ]"
-                :disabled="star === movie.rating"
-                @click="updateRating(movieIndex, star)"
-              >
-                <StarIcon class="movie-item-star-icon" />
-              </button>
-            </div>
-
-            <div class="movie-item-actions-list-wrapper">
-              <button
-                class="movie-item-action-edit-button"
-                @click="editMovie(movieIndex)"
-              >
-                <PencilIcon class="w-4 h-4" />
-              </button>
-              <button
-                class="movie-item-action-remove-button"
-                @click="removeMovie(movieIndex)"
-              >
-                <TrashIcon class="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+        :movie="movie"
+        @edit="editMovie($event)"
+        @remove="removeMovie($event)"
+        @update:rating="updateRating($event)"
+      />
     </div>
   </div>
 </template>
